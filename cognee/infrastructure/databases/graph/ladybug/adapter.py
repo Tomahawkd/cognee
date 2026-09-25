@@ -498,35 +498,32 @@ class LadybugAdapter(GraphDBInterface):
                         max_db_size=self.kuzu_max_db_size,
                     )
                 except RuntimeError as e:
+                    # A WAL can contain committed writes. Never remove it to
+                    # make opening succeed, or replace the original failure.
                     if "wal" in str(e).lower():
-                        wal_path = self.db_path + ".wal"
-                        logger.warning(
-                            "Corrupted WAL detected at %s — removing to recover. "
-                            "Uncommitted transactions from the previous session will be lost.",
-                            wal_path,
-                        )
-                        try:
-                            os.remove(wal_path)
-                        except FileNotFoundError:
-                            pass
-                    else:
-                        import ladybug
+                        raise
 
-                        from .ladybug_migrate import ladybug_migration, needs_migration
+                    import ladybug
 
+                    from .ladybug_migrate import ladybug_migration, needs_migration
+
+                    try:
                         should_migrate, old_version = needs_migration(
                             self.db_path, ladybug.__version__
                         )
-                        if should_migrate:
-                            ladybug_migration(
-                                new_db=self.db_path + "_new",
-                                old_db=self.db_path,
-                                new_version=ladybug.__version__,
-                                old_version=old_version,
-                                overwrite=True,
-                            )
+                    except OSError:
+                        raise e
+                    if not should_migrate:
+                        raise
+                    ladybug_migration(
+                        new_db=self.db_path + "_new",
+                        old_db=self.db_path,
+                        new_version=ladybug.__version__,
+                        old_version=old_version,
+                        overwrite=True,
+                    )
 
-                    # After WAL or migration mitigation try initialization again
+                    # Retry only after an identified legacy format was migrated.
                     self.db = Database(
                         self.db_path,
                         buffer_pool_size=self.kuzu_buffer_pool_size,

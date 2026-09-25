@@ -33,6 +33,11 @@ from cognee.tasks.graph.exceptions import (
     InvalidGraphModelError,
     InvalidOntologyAdapterError,
 )
+from cognee.tasks.graph.memory_extraction import (
+    filter_memory_graph,
+    is_memory_chunk,
+    prepare_memory_extraction_text,
+)
 
 logger = get_logger("extract_graph_from_data")
 
@@ -216,6 +221,10 @@ async def extract_graph_from_data(
     if not isinstance(graph_model, type) or not issubclass(graph_model, BaseModel):
         raise InvalidGraphModelError(graph_model)
 
+    memory_chunks = [
+        custom_prompt is None and issubclass(graph_model, KnowledgeGraph) and is_memory_chunk(chunk)
+        for chunk in data_chunks
+    ]
     calculate_chunk_graphs = kwargs.get("calculate_chunk_graphs")
     if callable(calculate_chunk_graphs):
         extracted = calculate_chunk_graphs(data_chunks, graph_model, custom_prompt, **kwargs)
@@ -225,11 +234,25 @@ async def extract_graph_from_data(
             chunk_graphs = await asyncio.gather(
                 *[
                     extract_content_graph(
-                        chunk.text, graph_model, custom_prompt=custom_prompt, **kwargs
+                        prepare_memory_extraction_text(chunk.text) if memory else chunk.text,
+                        graph_model,
+                        custom_prompt=custom_prompt,
+                        memory_policy=memory,
+                        **kwargs,
                     )
-                    for chunk in data_chunks
+                    for chunk, memory in zip(data_chunks, memory_chunks)
                 ]
             )
+    if not isinstance(chunk_graphs, list):
+        raise InvalidChunkGraphInputError("chunk_graphs must be a list.")
+    if len(chunk_graphs) != len(data_chunks):
+        raise InvalidChunkGraphInputError(
+            f"length mismatch: {len(data_chunks)} chunks vs {len(chunk_graphs)} graphs."
+        )
+    chunk_graphs = [
+        filter_memory_graph(graph) if memory and isinstance(graph, KnowledgeGraph) else graph
+        for graph, memory in zip(chunk_graphs, memory_chunks)
+    ]
     cache_entity_embeddings = kwargs.get("cache_entity_embeddings")
     if callable(cache_entity_embeddings):
         callback_result = cache_entity_embeddings(chunk_graphs, **kwargs)

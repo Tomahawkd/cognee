@@ -242,9 +242,10 @@ def derive_node_name(node_info, node_id):
     first-session trust killer in user testing. Nodes with no readable
     field get an explicit "Unnamed <Type>" placeholder instead.
     """
-    name = node_info.get("name")
-    if name and not looks_like_identifier(name):
-        return name
+    for key in ("display_name", "name"):
+        name = node_info.get(key)
+        if name and not looks_like_identifier(name):
+            return name
 
     for key in _NAME_FALLBACK_KEYS:
         value = node_info.get(key)
@@ -1494,7 +1495,13 @@ def preprocess(graph_data, schema_data: dict[str, Any] | None = None) -> Preproc
 # Properties the store is asked for when streaming. Every key the compact
 # fields below are derived from, including the name fallbacks: dropping `text`
 # here would name every chunk "Unnamed DocumentChunk".
-COMPACT_PROPERTY_KEYS = ("name", *_NAME_FALLBACK_KEYS, "belongs_to_set", "source_node_set")
+COMPACT_PROPERTY_KEYS = (
+    "display_name",
+    "name",
+    *_NAME_FALLBACK_KEYS,
+    "belongs_to_set",
+    "source_node_set",
+)
 
 
 def compact_node(node_id, node_info) -> dict[str, Any]:

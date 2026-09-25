@@ -8,6 +8,7 @@ First decide accept (true/false):
 - accept=false, reason="already_known": a SIMILAR EXISTING LESSON already conveys this learning.
 - accept=false, reason="not_durable": the lesson is session-local and not useful beyond this session.
 - accept=false, reason="unsupported": the MEMBER ENTRIES do not actually support the statement.
+- Treat literal commit subjects or commit messages, diff headers or patch hunks, import bookkeeping, routine command outcomes, and one-off execution events as not durable. Preserve a supported reusable cause, decision, constraint, fix, or procedure when present, rather than persisting the surrounding artifacts.
 - Otherwise accept=true and write the lesson.
 
 When accept is true, write:

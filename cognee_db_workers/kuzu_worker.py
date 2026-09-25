@@ -86,27 +86,26 @@ def _open_database(registry: HandleRegistry, req: Request) -> HandleResult:
             # rather than treating it as corruption/migration.
             db = _retry_open_locked(ladybug, req.kwargs, e)
         else:
+            # WAL replay failures need explicit recovery from preserved files:
+            # deleting a WAL can discard committed transactions.
             if "wal" in message:
-                # In case of corrupted WAL file preventing database opening, remove the WAL file and try again
-                wal_path = db_path + ".wal"
-                try:
-                    import os
+                raise
 
-                    os.remove(wal_path)
-                except FileNotFoundError:
-                    pass
-            else:
-                from .ladybug_migrate import ladybug_migration, needs_migration
+            from .ladybug_migrate import ladybug_migration, needs_migration
 
+            try:
                 should_migrate, old_version = needs_migration(db_path, ladybug.__version__)
-                if should_migrate:
-                    ladybug_migration(
-                        new_db=db_path + "_new",
-                        old_db=db_path,
-                        new_version=ladybug.__version__,
-                        old_version=old_version,
-                        overwrite=True,
-                    )
+            except OSError:
+                raise e
+            if not should_migrate:
+                raise
+            ladybug_migration(
+                new_db=db_path + "_new",
+                old_db=db_path,
+                new_version=ladybug.__version__,
+                old_version=old_version,
+                overwrite=True,
+            )
             db = ladybug.Database(**req.kwargs)
 
     return HandleResult(value=None, handle_id=registry.register(db))

@@ -16,7 +16,12 @@ from cognee.shared.llm_graph_model import (
 
 
 async def extract_content_graph(
-    content: str, response_model: type[BaseModel], custom_prompt: str | None = None, **kwargs: Any
+    content: str,
+    response_model: type[BaseModel],
+    custom_prompt: str | None = None,
+    *,
+    memory_policy: bool = False,
+    **kwargs: Any,
 ) -> BaseModel:
     if custom_prompt:
         system_prompt = custom_prompt
@@ -34,6 +39,8 @@ async def extract_content_graph(
             base_directory = None
 
         system_prompt = render_prompt(prompt_path, {}, base_directory=base_directory)
+        if memory_policy:
+            system_prompt += "\n\n" + render_prompt("memory_graph_policy.txt", {})
 
     simplified_response_model = response_model
     if isinstance(response_model, type) and issubclass(response_model, DataPoint):

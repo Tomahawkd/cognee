@@ -20,9 +20,9 @@ async def get_formatted_graph_data(dataset_id: UUID, user: User):
         "nodes": [
             {
                 "id": str(node[0]),
-                "label": node[1]["name"]
-                if ("name" in node[1] and node[1]["name"] != "")
-                else f"{node[1]['type']}_{node[0]!s}",
+                "label": node[1].get("display_name")
+                or node[1].get("name")
+                or f"{node[1]['type']}_{node[0]!s}",
                 "type": node[1]["type"],
                 "properties": {
                     key: value

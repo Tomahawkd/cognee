@@ -227,3 +227,6 @@ pr_body.md
 # Scratch data/system dirs written by the keyless e2e script
 cognee/tests/e2e/keyless/.keyless_run/
 cognee/tests/e2e/keyless/.crash_run/
+
+# Keep local deployment artifacts and operational reports out of commits.
+/deployment/

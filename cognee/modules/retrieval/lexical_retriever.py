@@ -13,14 +13,21 @@ logger = get_logger("LexicalRetriever")
 
 
 def tokenize_words(text: str, stop_words: set[str] | None = None) -> list[str]:
-    """Lowercase, split on word characters, and drop any stop words.
+    """Keep whole identifiers and add word aliases before discarding case.
 
     Shared by the lexical retrievers so tokenization stays consistent across scorers.
     """
-    tokens = re.findall(r"\w+", text.lower())
-    if not stop_words:
-        return tokens
-    return [token for token in tokens if token not in stop_words]
+    tokens = []
+    for word in re.findall(r"\w+(?:-\w+)*", text):
+        # Split acronym boundaries first (HTTPServer), then CamelCase (ParseError).
+        split = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1 \2", word)
+        split = re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", split)
+        parts = re.split(r"[_\s-]+", split.lower())
+        aliases = dict.fromkeys([word.lower(), re.sub(r"[_-]+", "", word).lower(), *parts])
+        tokens.extend(
+            alias for alias in aliases if alias and (not stop_words or alias not in stop_words)
+        )
+    return tokens
 
 
 class LexicalRetriever(BaseRetriever):

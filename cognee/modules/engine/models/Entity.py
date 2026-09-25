@@ -4,6 +4,8 @@ from cognee.modules.engine.models.EntityType import EntityType
 
 class Entity(DataPoint):
     name: str
+    # Presentation only; canonical name still controls identity and embeddings.
+    display_name: str | None = None
     # Either a bare EntityType, or (Edge(relationship_type="is_a", edge_text=...),
     # EntityType) to carry retrieval text on the edge itself - same bare-tuple
     # convention as ``relations`` below.

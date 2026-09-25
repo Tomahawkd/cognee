@@ -9,6 +9,7 @@ Propose durable lessons grounded in this slice. For each lesson return:
 Rules:
 - MERGE: combine turns and candidates that express the same underlying learning into ONE lesson. Never restate the same fact in two lessons within this slice.
 - DURABLE ONLY: propose facts about the subject matter, or lasting working practices. Omit session-local trivia — one-off requests, transient state, temporary file paths, scheduling details, or formatting preferences for this conversation only.
+- OMIT ARTIFACTS: do not persist literal commit subjects or commit messages, diff headers or patch hunks, import bookkeeping, routine command outcomes, or one-off execution details. Extract the reusable cause, decision, constraint, fix, or procedure instead; a patch syntax lesson can be durable even when its surrounding diff is not.
 - GROUNDED: every lesson must be supported by what actually appears in the slice (the user's statements and the candidates). Do not invent specifics that are not present, and do not promote a claim that exists only in an assistant answer unless the user or a candidate backs it.
 - Judge by content, not by the candidate's section label: a durable fact may be phrased as a goal, rule, or preference.
 

@@ -60,6 +60,7 @@ def _get_or_create_entity(
     entity = Entity(
         id=entity_id,
         name=generate_node_name(extracted_node.name),
+        display_name=extracted_node.name,
         is_a=entity_type,
         description=extracted_node.description,
         belongs_to_set=data_chunk.belongs_to_set,
